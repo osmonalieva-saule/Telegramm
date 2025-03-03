@@ -28,7 +28,7 @@ interface ChatService {
     suspend fun deleteMessage(
         @Path("chatId") chatId: Int,
         @Path("messageId") messageId: Int
-    )
+    ): Unit
 
     @FormUrlEncoded
     @PUT("chat/{chatId}/message/{messageId}")

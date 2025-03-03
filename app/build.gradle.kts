@@ -1,6 +1,11 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    kotlin("plugin.serialization") version "2.1.10"
+    id("com.google.dagger.hilt.android")
+    id("com.google.devtools.ksp")
+
+
 }
 
 android {
@@ -37,6 +42,11 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
+
+    hilt {
+        enableAggregatingTask = true
+
+    }
     buildFeatures {
         viewBinding = true
         buildConfig = true
@@ -64,4 +74,6 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation (libs.converter.gson)
     implementation(libs.retrofit2.kotlinx.serialization.converter)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
 }

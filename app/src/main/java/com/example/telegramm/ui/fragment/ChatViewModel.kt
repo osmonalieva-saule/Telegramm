@@ -7,12 +7,18 @@ import androidx.lifecycle.viewModelScope
 import com.example.telegramm.data.core.Either
 import com.example.telegramm.data.model.ChatResponse
 import com.example.telegramm.data.repository.ChatRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import javax.inject.Inject
 
-class ChatViewModel : ViewModel() {
-    private val repository = ChatRepository()
-    private val _message = MutableLiveData<List<ChatResponse>>()
-    val message: LiveData<List<ChatResponse>> get() = _message
+@HiltViewModel
+
+class ChatViewModel @Inject constructor(
+    private val repository: ChatRepository
+): ViewModel() {
+
+    private val _messages = MutableLiveData<List<ChatResponse>>()
+    val message: LiveData<List<ChatResponse>> get() = _messages
 
     private val _event = MutableLiveData<UiEvent>()
     val event: LiveData<UiEvent> get() = _event
@@ -24,27 +30,49 @@ class ChatViewModel : ViewModel() {
     fun getChat(chatId: Int){
         viewModelScope.launch {
             when (val result = repository.getChat(chatId)) {
-                is Either.Success -> _message.postValue(result.data)
+                is Either.Success -> _messages.postValue(result.data)
+
                 is Either.Error -> sendEvent(UiEvent.ShowError("Ошибка загрузки чата: ${result.error.message}"))
             }
         }
     }
 
-    private suspend fun sendEvent(event: UiEvent) {
-        _event.postValue(event)
+
+    private fun sendEvent(event: UiEvent) {
+        _event.value = event
     }
 
-    fun sendMessage( message: String) {
+    fun sendMessage(chatId: Int, message: String, receiverId: String, senderId: String) {
         viewModelScope.launch {
-            when (val result = repository.sendMessage( message)) {
+            when (val result = repository.sendMessage(chatId, message, receiverId, senderId)) {
                 is Either.Success -> {
-                    val updatedList = _message.value.orEmpty() + result.data
-                    _message.postValue(updatedList)
+                    val updatedList = _messages.value.orEmpty() + result.data
+                    _messages.postValue(updatedList)
                     sendEvent(UiEvent.SendMessage("Сообщение отправлено"))
                 }
                 is Either.Error -> sendEvent(UiEvent.ShowError("Ошибка отправки: ${result.error.message}"))
             }
         }
+    }
+    fun deleteMessage(chatId: Int, messageId: Int) {
+        viewModelScope.launch {
+            when (val result = repository.deleteMessage(chatId, messageId)) {
+                is Either.Success -> sendEvent(UiEvent.DeleteMessage("Сообщение удалено"))
+                is Either.Error -> sendEvent(UiEvent.ShowError("Ошибка удаления: ${result.error.message}"))
+            }
+        }
+    }
+
+    fun updateMessage(chatId: Int, messageld: Int, newMessage: String){
+        viewModelScope.launch {
+            when (val result = repository.updateMessage(chatId, messageld, newMessage)) {
+                is Either.Success -> sendEvent(UiEvent.UpdateMessage("Сообщение изменено"))
+                is Either.Error -> sendEvent(UiEvent.ShowError("Ошибка изменения: ${result.error.message}"))
+            }
+        }
+    }
+    fun refreshChat(chatId: Int) {
+        getChat(chatId)
     }
 
     sealed class UiEvent {

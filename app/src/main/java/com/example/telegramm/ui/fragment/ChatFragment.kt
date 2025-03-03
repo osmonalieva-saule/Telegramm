@@ -15,7 +15,10 @@ import androidx.lifecycle.repeatOnLifecycle
 import com.example.telegramm.data.model.ChatResponse
 import com.example.telegramm.databinding.FragmentChatBinding
 import com.example.telegramm.ui.adapter.ChatAdapter
+import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.launch
+
+@AndroidEntryPoint
 
 class ChatFragment : Fragment() {
 
@@ -34,7 +37,7 @@ class ChatFragment : Fragment() {
         builder.setPositiveButton("Update"){ _, _ ->
             val text = editText.text.toString().trim()
             if (text.isNotEmpty()){
-//                viewModel.updateMessage(message.id, text)
+                viewModel.updateMessage(message.chatId!!, message.id!!, text)
             }
         }
         builder.setNegativeButton("Cancel"){dialog, _ ->
@@ -48,7 +51,8 @@ class ChatFragment : Fragment() {
         builder.setTitle("Delete message")
         builder.setMessage("Are you sure you want to delete this message")
         builder.setPositiveButton("Delete") {_, _ ->
-//            viewModel.deleteMessage(message.id)
+
+           viewModel.deleteMessage(message.chatId!!, message.id!!)
         }
         builder.setNegativeButton("Cancel") {dialog, _ ->
             dialog.dismiss()
@@ -77,6 +81,15 @@ class ChatFragment : Fragment() {
     }
 
     private fun init() {
+        binding.btn.setOnClickListener {
+            val text = binding.editText.text.toString().trim()
+            text.takeIf { it.isNotEmpty() }?.let {
+                viewModel.sendMessage(2101, text, "111", "222")
+                binding.editText.text.clear() // Очищаем поле ввода
+                viewModel.getChat(1) // Обновляем чат после отправки
+            }
+
+        }
 
     }
 
@@ -88,9 +101,14 @@ class ChatFragment : Fragment() {
         binding.btn.setOnClickListener {
             val message = binding.editText.text.toString().trim()
             if (message.isNotEmpty()) {
-                viewModel.sendMessage(message)
-                binding.editText.text.clear() // Очищаем поле ввода
-                viewModel.getChat(1) // Обновляем чат после отправки
+                viewModel.sendMessage(
+                    chatId = 1,
+                    message = message,
+                    receiverId = "receiver123",
+                    senderId = "sender456"
+                )
+                binding.editText.text.clear()
+                viewModel.getChat(1)
             }
         }
         viewLifecycleOwner.lifecycleScope.launch {
